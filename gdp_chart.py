@@ -85,7 +85,6 @@ def main() -> None:
     fig3.tight_layout()
     fig3.savefig(f'{out_base}_graph3.png', dpi=288)
 
-    # dynamic product idea generation
     roots_map = {
         'Unemployment': 'Job',
         'Consumer Spending': 'Budget',
@@ -95,43 +94,60 @@ def main() -> None:
         'Education Attainment': 'Upskill',
         'Consumer Credit': 'Credit'
     }
-    suffixes = ['AI Platform','Dashboard','Marketplace','SaaS','Coach','Assistant','App','Service']
-    suffix_pool = rng.permutation(suffixes)
-    product_ideas = [f"{roots_map.get(lbl,lbl.split()[0])} {suffix_pool[i % len(suffix_pool)]}" for i, lbl in enumerate(labels)]
+    adjectives = [
+        'AI','Smart','Quantum','Edge','Cloud','Mobile','Secure','Green','Social','Hyper',
+        'Open','Voice','XR','Micro','Nano','Predictive','Realtime','LowCode','NoCode','Composable'
+    ]
+    suffixes = [
+        'Platform','Dashboard','Marketplace','SaaS','Coach','Assistant','App','Service','Studio',
+        'Hub','Exchange','Network','Analytics','Engine','API','Toolkit','OS','System','Portal',
+        'Bot','Planner','Tracker','Optimizer','Simulator'
+    ]
 
-    assumptions = {}
+    # --- new section: product groups ---
+    base_desc = {
+        'Job'        : 'Workforce analytics & employment intelligence',
+        'Budget'     : 'Consumer spending optimization platforms',
+        'SupplyChain': 'Industrial and logistics orchestration software',
+        'Debt'       : 'Fiscal health and debt management tools',
+        'Wealth'     : 'Personal and household wealth solutions',
+        'Upskill'    : 'Educational and skill-upgrading services',
+        'Credit'     : 'Consumer credit analytics and management'
+    }
+
     effects = np.abs(contrib).mean(axis=0)
-    max_eff = effects.max()
-    for idea, eff in zip(product_ideas, effects):
-        assumptions[idea] = {
-            'tam': 1e9 * (1 + 4 * eff / max_eff),
-            'penetration': 0.02 + 0.03 * rng.random(),
-            'margin': 0.20 + 0.15 * rng.random()
-        }
+    top_bases = []
+    for idx in order:
+        if sw_fix[idx]:
+            b = roots_map.get(labels[idx], labels[idx].split()[0])
+            if b not in top_bases:
+                top_bases.append(b)
+            if len(top_bases) == 5:
+                break
 
-    matrix = pd.DataFrame({
-        'Driver': labels,
-        'Effect': effects[order],
-        'Software_Addressable': [sw_fix[i] for i in order],
-        'Proposed_Product': [product_ideas[i] for i in order]
-    })
-    matrix['Rank'] = matrix.index + 1
-    matrix['TAM_USD'] = matrix['Proposed_Product'].map(lambda x: assumptions[x]['tam'])
-    matrix['Penetration'] = matrix['Proposed_Product'].map(lambda x: assumptions[x]['penetration'])
-    matrix['Margin'] = matrix['Proposed_Product'].map(lambda x: assumptions[x]['margin'])
-    matrix['Potential_Revenue_USD'] = matrix['TAM_USD'] * matrix['Penetration']
-    matrix['Potential_Profit_USD'] = matrix['Potential_Revenue_USD'] * matrix['Margin']
-    matrix['Derivative_Coefficient'] = [β[i] for i in order]
-    matrix.to_csv(f'{out_base}_product_market_analysis.csv', index=False)
+    group_info = {}
+    for base in top_bases:
+        subtypes, exp = [], []
+        for i in range(5):
+            st = f"{base} {adjectives[i]} {suffixes[i]}"
+            subtypes.append(st)
+            exp.append(f"{adjectives[i]} {suffixes[i]} software for {base_desc[base].lower()}.")
+        group_info[base] = (subtypes, exp)
+
+    print('\n=== Product Groups by Top-Level Type ===\n')
+    for base in sorted(group_info.keys()):
+        print(f'{base}: {base_desc[base]}')
+        subs, exps = group_info[base]
+        for i, (st, ex) in enumerate(zip(subs, exps), 1):
+            print(f'  {i}. {st} – {ex}')
+        print()
 
     corr = np.corrcoef(dY, np.diff(df['debt'].values))[0, 1]
     print(f'Correlation ΔGDP vs ΔDebt: {corr:.2f}')
     for lbl, coef in zip(labels, β):
         print(f'{lbl:22s}: {coef:+.4f}')
-    for _, r in matrix.iterrows():
-        print(f"{r['Proposed_Product']:25s} | dGDP/dDriver={r['Derivative_Coefficient']:+.4f} | "
-              f"TAM=${r['TAM_USD']/1e9:6.1f}B | Rev≈${r['Potential_Revenue_USD']/1e9:5.1f}B | "
-              f"Profit≈${r['Potential_Profit_USD']/1e9:4.1f}B")
 
 if __name__ == '__main__':
+    main()
+else:
     main()
