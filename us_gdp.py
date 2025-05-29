@@ -8,33 +8,58 @@ def main():
     args = parser.parse_args()
 
     quarters = [
+        "Q1 2021", "Q2 2021", "Q3 2021", "Q4 2021",
+        "Q1 2022", "Q2 2022", "Q3 2022", "Q4 2022",
         "Q1 2023", "Q2 2023", "Q3 2023", "Q4 2023",
         "Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024",
         "Q1 2025"
     ]
 
     gdp_growth = [
-        1.1, 2.4, 4.9, 3.3,
-        1.6, 2.8, 2.8, 2.3,
-        -0.3
+        5.6, 6.4, 3.5, 7.4,
+       -1.0, 0.3, 2.7, 3.4,
+        2.8, 2.4, 4.4, 3.2,
+        1.6, 3.0, 3.1, 2.4,
+       -0.3
     ]
 
-    federal_debt = [
+    federal_debt = [np.nan]*8 + [
         31.46, 31.76, 33.02, 33.94,
         34.29, 34.28, 34.40, 34.80,
         34.96
     ]
 
+    unemployment_rate = [np.nan]*8 + [
+        3.6, 3.5, 3.8, 3.7,
+        3.8, 3.9, 3.8, 3.7,
+        4.1
+    ]
+    pce_inflation = [np.nan]*8 + [
+        4.5, 3.8, 3.6, 3.5,
+        3.4, 2.8, 2.4, 2.3,
+        2.7
+    ]
+    consumer_spending = [np.nan]*8 + [
+        2.0, 1.6, 4.5, 1.1,
+        1.8, 4.0, 3.5, 2.0,
+        0.5
+    ]
+    industrial_production = [np.nan]*8 + [
+        -0.2, 1.0, 0.5, -0.1,
+        0.3, 1.2, 0.7, 0.4,
+       -0.4
+    ]
+
     raw_annotations = {
-        0: "Fed rate hikes curb growth",
-        1: "Robust consumer spending",
-        2: "Inventory replenishment spike",
-        3: "Housing market slowdown",
-        4: "Import surge & austerity measures",
-        5: "Export rebound bolsters GDP",
-        6: "Services sector expansion",
-        7: "Energy sector strength",
-        8: "Financial sector headwinds"
+        8:  "Fed rate hikes curb growth",
+        9:  "Robust consumer spending",
+        10: "Inventory replenishment spike",
+        11: "Housing market slowdown",
+        12: "Import surge & austerity measures",
+        13: "Export rebound bolsters GDP",
+        14: "Services sector expansion",
+        15: "Energy sector strength",
+        16: "Financial sector headwinds"
     }
 
     annotations = {
@@ -47,9 +72,16 @@ def main():
     corr = np.corrcoef(derivative_gdp, derivative_debt)[0,1]
     print(f"Correlation between Δ GDP Growth and Δ Federal Debt: {corr:.2f}")
 
-    fig, ax1 = plt.subplots(figsize=(12, 6))
+    fig, ax1 = plt.subplots(figsize=(13.33, 7.50), dpi=288)
+    ax1.axhline(0, linestyle='--', linewidth=1, label='0% baseline')
+
     ax1.plot(quarters, gdp_growth, marker='o', linewidth=2, label='GDP Growth')
     ax1.plot(quarters[1:], derivative_gdp, marker='x', linestyle='--', linewidth=2, label='Δ GDP Growth')
+    ax1.plot(quarters, unemployment_rate, marker='^', linewidth=2, label='Unemployment Rate')
+    ax1.plot(quarters, pce_inflation, marker='p', linewidth=2, label='PCE Inflation')
+    ax1.plot(quarters, consumer_spending, marker='h', linewidth=2, label='Consumer Spending Growth')
+    ax1.plot(quarters, industrial_production, marker='*', linewidth=2, label='Industrial Production Growth')
+
     for idx, text in annotations.items():
         ax1.annotate(
             text,
@@ -58,8 +90,9 @@ def main():
             arrowprops=dict(arrowstyle='->', lw=1),
             fontsize='small'
         )
-    ax1.set_xlabel("Quarter")
-    ax1.set_ylabel("GDP Growth (%)")
+
+    ax1.set_xlabel("Quarter (e.g., Q1 2021)")
+    ax1.set_ylabel("Percentage / Growth Rates (annualized)")
     ax1.grid(True, linestyle='--', alpha=0.5)
 
     ax2 = ax1.twinx()
@@ -71,13 +104,19 @@ def main():
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
 
-    plt.title("US Real GDP Growth and Federal Debt by Quarter")
-    fig.tight_layout()
+    plt.title("US Real GDP Growth, Federal Debt, and Related Metrics by Quarter")
 
-    if args.output:
-        plt.savefig(args.output)
-    else:
-        plt.show()
+    explanation = (
+        "Overall: US real GDP growth surged in 2021–22 as the economy rebounded from the pandemic; "
+        "growth moderated through 2023–24 amid Federal Reserve tightening, supply-chain normalization, "
+        "and shifts in consumer spending and industrial output, while rising debt added fiscal headwinds."
+    )
+    fig.text(0.5, 0.02, explanation, ha='center', va='bottom', fontsize='small')
+
+    fig.tight_layout(rect=[0, 0.05, 1, 1])
+
+    output_path = args.output or 'real_gdp_growth_4k.png'
+    plt.savefig(output_path, dpi=288)
 
 if __name__ == "__main__":
     main()
