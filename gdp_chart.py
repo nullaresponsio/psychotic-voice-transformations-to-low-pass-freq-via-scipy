@@ -104,7 +104,6 @@ def main() -> None:
         'Bot','Planner','Tracker','Optimizer','Simulator'
     ]
 
-    # --- new section: product groups ---
     base_desc = {
         'Job'        : 'Workforce analytics & employment intelligence',
         'Budget'     : 'Consumer spending optimization platforms',
@@ -146,6 +145,28 @@ def main() -> None:
     print(f'Correlation ΔGDP vs ΔDebt: {corr:.2f}')
     for lbl, coef in zip(labels, β):
         print(f'{lbl:22s}: {coef:+.4f}')
+
+    base_coef = {}
+    for lbl, coef in zip(labels, β):
+        base = roots_map.get(lbl, lbl.split()[0])
+        base_coef[base] = coef
+
+    explanation_map = {
+        'Job'        : 'reducing unemployment, shortening job-search cycles, and matching labor supply to open roles',
+        'Budget'     : 'helping households optimize discretionary spending, boosting aggregate demand',
+        'SupplyChain': 'accelerating industrial throughput, lowering inventory lags, and trimming production costs',
+        'Debt'       : 'improving fiscal health, lowering financing costs, and freeing resources for productive investment',
+        'Wealth'     : 'growing household net worth, increasing confidence and capacity for consumption'
+    }
+
+    print('\n=== Partial-Derivative Effects and Monetization Narrative ===\n')
+    for base in top_bases:
+        coef = base_coef.get(base, 0.0)
+        label = [k for k, v in roots_map.items() if v == base][0] if base in roots_map.values() else base
+        expl = explanation_map.get(base, f'positively influencing {label.lower()}')
+        print(f'{base}: dGDP/d{label} ≈ {coef:+.4f}')
+        print(f'   The product family targets {expl}, which historical data suggest changes GDP by ~{coef:+.4f} pp for a one-unit improvement, holding other factors constant.')
+        print(f'   Monetization strategy: tiered SaaS subscriptions, data-driven upsells (API access, advanced analytics), and performance-linked fees directly tied to realized {label.lower()} improvements.\n')
 
 if __name__ == '__main__':
     main()
