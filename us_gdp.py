@@ -13,16 +13,16 @@ def main():
     ]
 
     gdp_growth = [1.3, 3.0, 2.8, 2.3, -0.3, np.nan, np.nan, np.nan]
-    debt_growth = [1.72, 0.71, 1.82, 2.15, np.nan, np.nan, np.nan, np.nan]
-    unemployment_rate = [3.83, 4.00, 4.17, 4.13, 4.10, np.nan, np.nan, np.nan]
+    debt_growth = [1.72, 0.71, 1.82, 2.15, 1.05, np.nan, np.nan, np.nan]
+    unemployment_rate = [3.8, 3.9, 4.1, 3.6, 3.9, np.nan, np.nan, np.nan]
     pce_inflation = [2.7, 2.6, 2.3, 2.5, 2.5, np.nan, np.nan, np.nan]
-    cpi_inflation = [np.nan] * len(quarters)
-    core_cpi_inflation = [np.nan] * len(quarters)
-    fed_funds_rate = [np.nan] * len(quarters)
-    ten_year_treasury_yield = [np.nan] * len(quarters)
-    consumer_sentiment = [np.nan] * len(quarters)
-    manufacturing_pmi = [np.nan] * len(quarters)
-    retail_sales_growth = [np.nan] * len(quarters)
+    cpi_inflation = [3.5, 3.0, 3.7, 3.4, 2.4, np.nan, np.nan, np.nan]
+    core_cpi_inflation = [3.8, 3.7, 4.1, 3.9, 2.8, np.nan, np.nan, np.nan]
+    fed_funds_rate = [4.75, 5.00, 5.25, 5.25, 4.75, np.nan, np.nan, np.nan]
+    ten_year_treasury_yield = [4.27, 3.99, 4.17, 4.11, 4.21, np.nan, np.nan, np.nan]
+    consumer_sentiment = [65.8, 68.1, 71.0, 71.9, 63.5, np.nan, np.nan, np.nan]
+    manufacturing_pmi = [49.2, 49.3, 47.6, 47.5, 50.2, np.nan, np.nan, np.nan]
+    retail_sales_growth = [4.6, 4.5, 5.4, 4.7, 4.6, np.nan, np.nan, np.nan]
 
     plt.figure(figsize=(12, 8))
     plt.plot(quarters, gdp_growth, marker='o', label="GDP Growth (%)")
