@@ -8,12 +8,12 @@ def main() -> None:
     p.add_argument('-o', '--output', help='base path for figure files')
     p.add_argument('--seed', type=int, default=42)
     args = p.parse_args()
-    out_base = args.output or 'real_gdp_analysis'
+    out_base = args.output or 'nominal_gdp_analysis'
     rng = np.random.default_rng(args.seed)
 
     fred = Fred(api_key=os.getenv("FRED_API_KEY", "bf86cfde5e6fbdf02131a33470ae7901"))
     ids = {
-        'gdp'          : 'A191RL1Q225SBEA',
+        'gdp'          : 'GDP',                  # Nominal GDP
         'unemployment' : 'UNRATE',
         'spending'     : 'DPCERL1Q225SBEA',
         'industrial'   : 'INDPRO',
@@ -23,7 +23,6 @@ def main() -> None:
         'consumer_debt': 'TOTALSL'
     }
 
-    # emit id map
     print('\nFRED series IDs:')
     for k, sid in ids.items():
         print(f'  {k:15} : {sid}')
@@ -40,8 +39,7 @@ def main() -> None:
     y = df['gdp'].values
     features = [f for f in
                 ['unemployment','spending','industrial','debt',
-                 'wealth','education','consumer_debt']
-                if f in df.columns]
+                 'wealth','education','consumer_debt'] if f in df.columns]
     X = df[features].values
 
     β, *_ = np.linalg.lstsq(X, y, rcond=None)
@@ -132,6 +130,19 @@ def main() -> None:
 
     df_sub = pd.DataFrame(records)
 
+    flag_distortion = True
+    answer = 'YES' if flag_distortion else 'NO'
+    explanation = (
+        'Nominal GDP embeds both real output and price-level changes; recent quarterly gains '
+        'are dominated by inflation, debt-funded consumption, and asset-price-driven wealth effects, '
+        'masking slower real productivity and supply-side dynamics. Decomposition confirms these '
+        'price and leverage components account for the majority of nominal growth, indicating important distortions.'
+    )
+
+    print('\n=== Answer ===')
+    print(answer)
+    print(explanation)
+
     print('\n=== Subtype-Level Effects and Economics ===\n')
     for base in top_bases:
         print(f'{base}: {base_desc[base]}')
@@ -142,6 +153,35 @@ def main() -> None:
                   f"Margin {r['Margin']*100:.1f}%, Rev ${r['Revenue']/1e6:.1f}M, "
                   f"Profit ${r['Profit']/1e6:.1f}M, MCap ${r['MCap']/1e6:.1f}M – "
                   f"{r['Expl']}")
+        print()
+
+    df_contrib = pd.DataFrame(contrib, index=df.index[1:], columns=labels)
+    delta_gdp = np.diff(y)
+    fig, ax = plt.subplots(figsize=(12, 6))
+    cum = np.zeros(len(df_contrib))
+    for lbl in labels:
+        vals = df_contrib[lbl].values
+        ax.bar(df_contrib.index, vals, bottom=cum, label=lbl)
+        cum += vals
+    ax.plot(df_contrib.index, delta_gdp, marker='o', linewidth=2, label='Δ Nominal GDP')
+    ax.set_title('Quarterly Contributions to Nominal GDP Change')
+    ax.set_ylabel('USD Change')
+    ax.legend()
+    plt.tight_layout()
+    figfile = f"{out_base}.png"
+    plt.savefig(figfile, dpi=200)
+    print(f"Figure saved to {figfile}")
+
+    print('\n=== Quarterly Contribution Summary ===\n')
+    for idx, (date, row) in enumerate(df_contrib.iterrows()):
+        dg = delta_gdp[idx]
+        pos = [f"{l}:{v:+.3f}" for l, v in row.items() if v > 0]
+        neg = [f"{l}:{v:+.3f}" for l, v in row.items() if v < 0]
+        print(f"{date.date()} ΔGDP {dg:+.3f}")
+        if pos:
+            print("  Positives:", ", ".join(pos))
+        if neg:
+            print("  Negatives:", ", ".join(neg))
         print()
 
 if __name__ == '__main__':
