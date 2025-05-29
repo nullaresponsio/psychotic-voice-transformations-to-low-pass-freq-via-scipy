@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 import os, argparse, sys
 import numpy as np, pandas as pd, matplotlib.pyplot as plt
-from fredapi import Fred                                            # pip install fredapi
+from fredapi import Fred
 
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument('-o', '--output', help='base path for figure files')
+    p.add_argument('--seed', type=int, default=42)
     args = p.parse_args()
     out_base = args.output or 'real_gdp_analysis'
+    rng = np.random.default_rng(args.seed)
 
     fred = Fred(api_key="bf86cfde5e6fbdf02131a33470ae7901")
     ids = {
@@ -30,7 +32,6 @@ def main() -> None:
 
     df = pd.DataFrame(series).resample('QE').mean().dropna().iloc[-20:]
     y = df['gdp'].values
-
     features = [f for f in ['unemployment','spending','industrial','debt','wealth','education','consumer_debt'] if f in df.columns]
     X = df[features].values
 
@@ -84,25 +85,53 @@ def main() -> None:
     fig3.tight_layout()
     fig3.savefig(f'{out_base}_graph3.png', dpi=288)
 
-    product_ideas = [
-        '', 'Personal Budget Coach', 'Supply-Chain SaaS',
-        'Fiscal Transparency Dashboard', 'Micro-Investment Platform',
-        'Upskilling Marketplace', 'Debt Reduction AI Coach'
-    ]
+    # dynamic product idea generation
+    roots_map = {
+        'Unemployment': 'Job',
+        'Consumer Spending': 'Budget',
+        'Industrial Production': 'SupplyChain',
+        'Federal Debt': 'Debt',
+        'Household Wealth': 'Wealth',
+        'Education Attainment': 'Upskill',
+        'Consumer Credit': 'Credit'
+    }
+    suffixes = ['AI Platform','Dashboard','Marketplace','SaaS','Coach','Assistant','App','Service']
+    suffix_pool = rng.permutation(suffixes)
+    product_ideas = [f"{roots_map.get(lbl,lbl.split()[0])} {suffix_pool[i % len(suffix_pool)]}" for i, lbl in enumerate(labels)]
+
+    assumptions = {}
+    effects = np.abs(contrib).mean(axis=0)
+    max_eff = effects.max()
+    for idea, eff in zip(product_ideas, effects):
+        assumptions[idea] = {
+            'tam': 1e9 * (1 + 4 * eff / max_eff),
+            'penetration': 0.02 + 0.03 * rng.random(),
+            'margin': 0.20 + 0.15 * rng.random()
+        }
+
     matrix = pd.DataFrame({
         'Driver': labels,
-        'Effect': np.abs(contrib).mean(axis=0)[order],
+        'Effect': effects[order],
         'Software_Addressable': [sw_fix[i] for i in order],
         'Proposed_Product': [product_ideas[i] for i in order]
     })
     matrix['Rank'] = matrix.index + 1
-    matrix.to_csv(f'{out_base}_cause_effect_matrix.csv', index=False)
+    matrix['TAM_USD'] = matrix['Proposed_Product'].map(lambda x: assumptions[x]['tam'])
+    matrix['Penetration'] = matrix['Proposed_Product'].map(lambda x: assumptions[x]['penetration'])
+    matrix['Margin'] = matrix['Proposed_Product'].map(lambda x: assumptions[x]['margin'])
+    matrix['Potential_Revenue_USD'] = matrix['TAM_USD'] * matrix['Penetration']
+    matrix['Potential_Profit_USD'] = matrix['Potential_Revenue_USD'] * matrix['Margin']
+    matrix['Derivative_Coefficient'] = [β[i] for i in order]
+    matrix.to_csv(f'{out_base}_product_market_analysis.csv', index=False)
 
     corr = np.corrcoef(dY, np.diff(df['debt'].values))[0, 1]
     print(f'Correlation ΔGDP vs ΔDebt: {corr:.2f}')
     for lbl, coef in zip(labels, β):
         print(f'{lbl:22s}: {coef:+.4f}')
-    print(matrix.to_string(index=False))
+    for _, r in matrix.iterrows():
+        print(f"{r['Proposed_Product']:25s} | dGDP/dDriver={r['Derivative_Coefficient']:+.4f} | "
+              f"TAM=${r['TAM_USD']/1e9:6.1f}B | Rev≈${r['Potential_Revenue_USD']/1e9:5.1f}B | "
+              f"Profit≈${r['Potential_Profit_USD']/1e9:4.1f}B")
 
 if __name__ == '__main__':
     main()
