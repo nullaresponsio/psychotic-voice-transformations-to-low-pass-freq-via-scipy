@@ -8,40 +8,71 @@ def main():
     args = parser.parse_args()
 
     quarters = [
+        "Q1 2023", "Q2 2023", "Q3 2023", "Q4 2023",
         "Q1 2024", "Q2 2024", "Q3 2024", "Q4 2024",
-        "Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025"
+        "Q1 2025"
     ]
 
-    gdp_growth = [1.3, 3.0, 2.8, 2.3, -0.3, np.nan, np.nan, np.nan]
-    debt_growth = [1.72, 0.71, 1.82, 2.15, 1.05, np.nan, np.nan, np.nan]
-    unemployment_rate = [3.8, 3.9, 4.1, 3.6, 3.9, np.nan, np.nan, np.nan]
-    pce_inflation = [2.7, 2.6, 2.3, 2.5, 2.5, np.nan, np.nan, np.nan]
-    cpi_inflation = [3.5, 3.0, 3.7, 3.4, 2.4, np.nan, np.nan, np.nan]
-    core_cpi_inflation = [3.8, 3.7, 4.1, 3.9, 2.8, np.nan, np.nan, np.nan]
-    fed_funds_rate = [4.75, 5.00, 5.25, 5.25, 4.75, np.nan, np.nan, np.nan]
-    ten_year_treasury_yield = [4.27, 3.99, 4.17, 4.11, 4.21, np.nan, np.nan, np.nan]
-    consumer_sentiment = [65.8, 68.1, 71.0, 71.9, 63.5, np.nan, np.nan, np.nan]
-    manufacturing_pmi = [49.2, 49.3, 47.6, 47.5, 50.2, np.nan, np.nan, np.nan]
-    retail_sales_growth = [4.6, 4.5, 5.4, 4.7, 4.6, np.nan, np.nan, np.nan]
+    gdp_growth = [
+        1.1, 2.4, 4.9, 3.3,
+        1.6, 2.8, 2.8, 2.3,
+        -0.3
+    ]
 
-    plt.figure(figsize=(12, 8))
-    plt.plot(quarters, gdp_growth, marker='o', label="GDP Growth (%)")
-    plt.plot(quarters, debt_growth, marker='s', label="Federal Debt Growth (%)")
-    plt.plot(quarters, unemployment_rate, marker='^', label="Unemployment Rate (%)")
-    plt.plot(quarters, pce_inflation, marker='d', label="PCE Inflation (% YoY)")
-    plt.plot(quarters, cpi_inflation, marker='x', label="CPI Inflation (% YoY)")
-    plt.plot(quarters, core_cpi_inflation, marker='.', label="Core CPI Inflation (% YoY)")
-    plt.plot(quarters, fed_funds_rate, marker='*', label="Fed Funds Rate (%)")
-    plt.plot(quarters, ten_year_treasury_yield, marker='P', label="10Y Treasury Yield (%)")
-    plt.plot(quarters, consumer_sentiment, marker='h', label="Consumer Sentiment Index")
-    plt.plot(quarters, manufacturing_pmi, marker='H', label="Manufacturing PMI")
-    plt.plot(quarters, retail_sales_growth, marker='+', label="Retail Sales Growth (%)")
-    plt.title("2024–2025 Real Economic Metrics by Quarter")
-    plt.xlabel("Quarter")
-    plt.ylabel("Value")
-    plt.legend(ncol=2, fontsize="small")
-    plt.grid(True)
-    plt.tight_layout()
+    federal_debt = [
+        31.46, 31.76, 33.02, 33.94,
+        34.29, 34.28, 34.40, 34.80,
+        34.96
+    ]
+
+    raw_annotations = {
+        0: "Fed rate hikes curb growth",
+        1: "Robust consumer spending",
+        2: "Inventory replenishment spike",
+        3: "Housing market slowdown",
+        4: "Import surge & austerity measures",
+        5: "Export rebound bolsters GDP",
+        6: "Services sector expansion",
+        7: "Energy sector strength",
+        8: "Financial sector headwinds"
+    }
+
+    annotations = {
+        idx: f"{text} ({gdp_growth[idx]:.1f}%)"
+        for idx, text in raw_annotations.items()
+    }
+
+    derivative_gdp = np.diff(gdp_growth)
+    derivative_debt = np.diff(federal_debt)
+    corr = np.corrcoef(derivative_gdp, derivative_debt)[0,1]
+    print(f"Correlation between Δ GDP Growth and Δ Federal Debt: {corr:.2f}")
+
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+    ax1.plot(quarters, gdp_growth, marker='o', linewidth=2, label='GDP Growth')
+    ax1.plot(quarters[1:], derivative_gdp, marker='x', linestyle='--', linewidth=2, label='Δ GDP Growth')
+    for idx, text in annotations.items():
+        ax1.annotate(
+            text,
+            xy=(quarters[idx], gdp_growth[idx]),
+            xytext=(idx, gdp_growth[idx] + 0.7),
+            arrowprops=dict(arrowstyle='->', lw=1),
+            fontsize='small'
+        )
+    ax1.set_xlabel("Quarter")
+    ax1.set_ylabel("GDP Growth (%)")
+    ax1.grid(True, linestyle='--', alpha=0.5)
+
+    ax2 = ax1.twinx()
+    ax2.plot(quarters, federal_debt, marker='s', linewidth=2, label='Federal Debt')
+    ax2.plot(quarters[1:], derivative_debt, marker='d', linestyle='-.', linewidth=2, label='Δ Federal Debt')
+    ax2.set_ylabel("Federal Debt (Trillions USD)")
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+
+    plt.title("US Real GDP Growth and Federal Debt by Quarter")
+    fig.tight_layout()
 
     if args.output:
         plt.savefig(args.output)
