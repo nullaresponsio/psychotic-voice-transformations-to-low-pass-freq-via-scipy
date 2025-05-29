@@ -1,3 +1,11 @@
+# Data sources:
+# GDP: BEA A191RL1Q225SBEA :contentReference[oaicite:0]{index=0}
+# Federal debt: Treasury GFDEBTN :contentReference[oaicite:1]{index=1}
+# Unemployment: BLS UNRATE :contentReference[oaicite:2]{index=2}
+# PCE inflation: Q1 23 :contentReference[oaicite:3]{index=3} Q2 23 :contentReference[oaicite:4]{index=4} Q3 23 :contentReference[oaicite:5]{index=5} Q4 23 :contentReference[oaicite:6]{index=6} Q1 24 :contentReference[oaicite:7]{index=7} Q2 24 :contentReference[oaicite:8]{index=8} Q3 24 :contentReference[oaicite:9]{index=9} Q4 24 :contentReference[oaicite:10]{index=10} Q1 25 :contentReference[oaicite:11]{index=11}
+# Consumer spending: BEA DPCERL1Q225SBEA :contentReference[oaicite:12]{index=12}
+# Industrial production: Fed IPB50001SQ :contentReference[oaicite:13]{index=13}
+
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,41 +34,41 @@ def main():
     federal_debt = [
         28.13, 28.53, 28.43, 29.62,
         30.40, 30.57, 30.93, 31.42,
-        31.46, 31.76, 33.02, 33.94,
-        34.29, 34.28, 34.40, 34.80,
-        34.96
+        31.46, 32.33, 33.17, 34.00,
+        34.59, 34.83, 35.46, 36.22,
+        36.21
     ]
 
     unemployment_rate = [
         6.2, 5.9, 5.1, 4.5,
         3.8, 3.6, 3.6, 3.6,
-        3.6, 3.5, 3.8, 3.7,
-        3.8, 3.9, 3.8, 3.7,
+        3.5, 3.5, 3.7, 3.8,
+        3.8, 4.0, 4.2, 4.1,
         4.1
     ]
 
     pce_inflation = [
         1.7, 4.2, 6.2, 6.8,
         7.0, 6.8, 6.5, 5.6,
-        4.5, 3.8, 3.6, 3.5,
-        3.4, 2.8, 2.4, 2.3,
-        2.7
+        4.2, 2.6, 2.9, 1.7,
+        3.4, 2.5, 1.5, 2.4,
+        3.6
     ]
 
     consumer_spending = [
         10.7, 11.9,  4.9,  3.3,
          3.1, -0.4,  1.5,  1.8,
-         2.0,  1.6,  4.5,  1.1,
-         1.8,  4.0,  3.5,  2.0,
-         0.5
+         4.9,  1.0,  2.5,  3.5,
+         1.9,  2.8,  3.7,  4.0,
+         1.8
     ]
 
     industrial_production = [
          1.9, 6.5, 0.4, 1.6,
          1.2, 0.5, -0.2, -0.3,
-        -0.2, 1.0, 0.5, -0.1,
-         0.3, 1.2, 0.7, 0.4,
-        -0.4
+         0.0, 0.1, 0.3, -0.5,
+        -0.4, 0.6, -0.2, -0.3,
+         1.3
     ]
 
     raw_annotations = {
@@ -134,6 +142,7 @@ def main():
                      arrowprops=dict(arrowstyle='->', lw=1), fontsize='small')
 
     ax1.set_ylabel("Percent / Growth Rate (Annualized)")
+    ax1.set_xlabel("Quarter")
     ax1.grid(True, linestyle='--', alpha=0.4)
     ax1.legend(loc='upper left')
     ax1.set_title("US Real GDP Growth & Related Metrics by Quarter")
