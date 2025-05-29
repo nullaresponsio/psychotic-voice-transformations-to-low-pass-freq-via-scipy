@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+import argparse
 import os
 import io
 import base64
@@ -5,10 +7,9 @@ import openai
 import numpy as np
 import scipy.signal
 import soundfile as sf
-from flask import Flask, Response, request
-import threading
 
-FS = 44100
+FS_DEFAULT = 44100
+PRESET_FS = [8000, 16000, 22050, 44100]
 
 def synthesize_text(text, fs):
     openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -37,29 +38,37 @@ def psychotic_transform(audio, fs, passthrough=False):
         filtered = (filtered + audio) / 2
     return filtered
 
-app = Flask(__name__)
+def parse_srt(path):
+    subs = []
+    with open(path, 'r', encoding='utf-8') as f:
+        content = f.read().strip().split('\n\n')
+    for block in content:
+        lines = block.splitlines()
+        if len(lines) >= 3:
+            subs.append(' '.join(lines[2:]))
+    return subs
 
-@app.route('/audio', methods=['GET'])
-def stream_tts():
-    text = request.args.get('text', '')
-    passthrough = request.args.get('passthrough', 'false').lower() == 'true'
-    syn = synthesize_text(text, FS)
-    proc = psychotic_transform(syn, FS, passthrough)
-    buf = io.BytesIO()
-    sf.write(buf, proc, FS, format='WAV')
-    return Response(buf.getvalue(), mimetype='audio/wav')
+def main():
+    parser = argparse.ArgumentParser(description="Process an SRT file into transformed speech audio")
+    parser.add_argument('srt_file', help="Path to input .srt file")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--cutoff', type=float, help="Low-pass filter cutoff frequency in Hz")
+    group.add_argument('--fs', type=int, choices=PRESET_FS, help="Output sampling frequency")
+    parser.add_argument('--passthrough', action='store_true', help="Mix original and filtered audio")
+    args = parser.parse_args()
 
-@app.route('/process', methods=['POST'])
-def stream_text():
-    data = request.json or {}
-    text = data.get('transcript', '')
-    passthrough = data.get('passthrough', False)
-    syn = synthesize_text(text, FS)
-    proc = psychotic_transform(syn, FS, passthrough)
-    buf = io.BytesIO()
-    sf.write(buf, proc, FS, format='WAV')
-    return Response(buf.getvalue(), mimetype='audio/wav')
+    fs = args.fs if args.fs else FS_DEFAULT
+    texts = parse_srt(args.srt_file)
+    combined = np.array([], dtype=float)
+    for text in texts:
+        audio = synthesize_text(text, fs)
+        if args.cutoff:
+            audio = low_pass_filter(audio, fs, cutoff=args.cutoff)
+        proc = psychotic_transform(audio, fs, passthrough=args.passthrough)
+        combined = np.concatenate([combined, proc])
+    out_path = os.path.splitext(args.srt_file)[0] + '_output.wav'
+    sf.write(out_path, combined, fs)
+    print(f"Written output to {out_path}")
 
 if __name__ == '__main__':
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=8000)).start()
-    print("Audio transform server running on http://0.0.0.0:8000")
+    main()
