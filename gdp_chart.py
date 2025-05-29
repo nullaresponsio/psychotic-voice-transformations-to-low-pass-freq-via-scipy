@@ -4,7 +4,7 @@ import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-o', '--output', help='Path to save figure')
+    parser.add_argument('-o', '--output', default='gdp_chart.png', help='Path to save figure')
     args = parser.parse_args()
 
     quarters = [
@@ -116,11 +116,7 @@ def main():
 
     plt.title("US Real GDP Growth, Federal Debt, and Related Metrics by Quarter")
     fig.tight_layout()
-
-    if args.output:
-        plt.savefig(args.output)
-    else:
-        plt.show()
+    plt.savefig(args.output)
 
 if __name__ == "__main__":
     main()

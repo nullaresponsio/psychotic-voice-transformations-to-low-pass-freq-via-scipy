@@ -23,29 +23,42 @@ def main():
        -0.3
     ]
 
-    federal_debt = [np.nan]*8 + [
+    federal_debt = [
+        28.13, 28.53, 28.43, 29.62,
+        30.40, 30.57, 30.93, 31.42,
         31.46, 31.76, 33.02, 33.94,
         34.29, 34.28, 34.40, 34.80,
         34.96
     ]
 
-    unemployment_rate = [np.nan]*8 + [
+    unemployment_rate = [
+        6.2, 5.9, 5.1, 4.5,
+        3.8, 3.6, 3.6, 3.6,
         3.6, 3.5, 3.8, 3.7,
         3.8, 3.9, 3.8, 3.7,
         4.1
     ]
-    pce_inflation = [np.nan]*8 + [
+
+    pce_inflation = [
+        1.7, 4.2, 6.2, 6.8,
+        7.0, 6.8, 6.5, 5.6,
         4.5, 3.8, 3.6, 3.5,
         3.4, 2.8, 2.4, 2.3,
         2.7
     ]
-    consumer_spending = [np.nan]*8 + [
+
+    consumer_spending = [
+        10.7, 11.9, 4.9, 3.3,
+        3.1, -0.4, 1.5, 1.8,
         2.0, 1.6, 4.5, 1.1,
         1.8, 4.0, 3.5, 2.0,
         0.5
     ]
-    industrial_production = [np.nan]*8 + [
-        -0.2, 1.0, 0.5, -0.1,
+
+    industrial_production = [
+        1.9, 6.5, 0.4, 1.6,
+        1.2, 0.5, -0.2, -0.3,
+       -0.2, 1.0, 0.5, -0.1,
         0.3, 1.2, 0.7, 0.4,
        -0.4
     ]
@@ -82,6 +95,9 @@ def main():
     ax1.plot(quarters, consumer_spending, marker='h', linewidth=2, label='Consumer Spending Growth')
     ax1.plot(quarters, industrial_production, marker='*', linewidth=2, label='Industrial Production Growth')
 
+    ax1.set_xticks(range(len(quarters)))
+    ax1.set_xticklabels(quarters, rotation=45, ha='right', fontsize='small')
+
     for idx, text in annotations.items():
         ax1.annotate(
             text,
@@ -91,7 +107,7 @@ def main():
             fontsize='small'
         )
 
-    ax1.set_xlabel("Quarter (e.g., Q1 2021)")
+    ax1.set_xlabel("Quarter")
     ax1.set_ylabel("Percentage / Growth Rates (annualized)")
     ax1.grid(True, linestyle='--', alpha=0.5)
 
