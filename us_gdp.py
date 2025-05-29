@@ -1,11 +1,3 @@
-# Data sources:
-# GDP: BEA A191RL1Q225SBEA :contentReference[oaicite:0]{index=0}
-# Federal debt: Treasury GFDEBTN :contentReference[oaicite:1]{index=1}
-# Unemployment: BLS UNRATE :contentReference[oaicite:2]{index=2}
-# PCE inflation: Q1 23 :contentReference[oaicite:3]{index=3} Q2 23 :contentReference[oaicite:4]{index=4} Q3 23 :contentReference[oaicite:5]{index=5} Q4 23 :contentReference[oaicite:6]{index=6} Q1 24 :contentReference[oaicite:7]{index=7} Q2 24 :contentReference[oaicite:8]{index=8} Q3 24 :contentReference[oaicite:9]{index=9} Q4 24 :contentReference[oaicite:10]{index=10} Q1 25 :contentReference[oaicite:11]{index=11}
-# Consumer spending: BEA DPCERL1Q225SBEA :contentReference[oaicite:12]{index=12}
-# Industrial production: Fed IPB50001SQ :contentReference[oaicite:13]{index=13}
-
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
@@ -83,10 +75,7 @@ def main():
         16: "Financial sector headwinds"
     }
 
-    annotations = {
-        idx: f"{text} ({gdp_growth[idx]:.1f}%)"
-        for idx, text in raw_annotations.items()
-    }
+    annotations = {idx: f"{txt} ({gdp_growth[idx]:.1f}%)" for idx, txt in raw_annotations.items()}
 
     derivative_gdp  = np.diff(gdp_growth)
     derivative_debt = np.diff(federal_debt)
@@ -122,8 +111,13 @@ def main():
     ])
 
     corr = np.corrcoef(derivative_gdp, derivative_debt)[0, 1]
-    print(f"Correlation between Δ GDP Growth and Δ Federal Debt: {corr:.2f}")
-    print("Partial derivatives (β):")
+
+    print("=== EXPLANATIONS ===")
+    print("Graph 1: headline GDP and component series; annotations flag notable shocks.")
+    print("Graph 2: chain-rule bars show quarter-to-quarter drivers; stacked sign indicates lift vs drag.")
+    print("Graph 3: average absolute contribution magnitudes rank systemic drivers and tags software-fixable ones.")
+    print(f"Correlation ΔGDP vs ΔDebt: {corr:.2f}")
+    print("β partial derivatives:")
     for lbl, b in zip(labels, beta):
         print(f"{lbl:22s}: {b:+.4f}")
 
@@ -139,40 +133,57 @@ def main():
 
     for idx, text in annotations.items():
         ax1.annotate(text, xy=(idx, gdp_growth[idx]), xytext=(idx, gdp_growth[idx] + 0.7),
-                     arrowprops=dict(arrowstyle='->', lw=1), fontsize='small')
+                     arrowprops=dict(arrowstyle='->', lw=1), fontsize='x-small')
 
     ax1.set_ylabel("Percent / Growth Rate (Annualized)")
     ax1.set_xlabel("Quarter")
     ax1.grid(True, linestyle='--', alpha=0.4)
-    ax1.legend(loc='upper left')
-    ax1.set_title("US Real GDP Growth & Related Metrics by Quarter")
+    ax1.legend(loc='upper left', fontsize='x-small')
+    ax1.set_title("Graph 1 – US Real GDP & Key Metrics")
 
     ax2.axhline(0, linestyle='--', linewidth=1)
     ax2.plot(quarters[1:], derivative_gdp, marker='x', linestyle='--', linewidth=2, label='Δ GDP Growth')
 
     bottoms = np.zeros_like(derivative_gdp)
     colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
-    for i, (name, series, col) in enumerate(zip(labels, contrib, colors)):
-        ax2.bar(quarters[1:], series, bottom=bottoms, label=f"∂GDP/∂{name} · d{name}/dt", width=0.6, color=col, alpha=0.6)
+    for series, name, col in zip(contrib, labels, colors):
+        ax2.bar(quarters[1:], series, bottom=bottoms, label=name, width=0.6, color=col, alpha=0.6)
         bottoms += series
 
     ax2.set_ylabel("Quarterly Δ GDP Contributions")
-    ax2.legend(loc='upper left', fontsize='small')
+    ax2.legend(loc='upper left', fontsize='x-small')
     ax2.set_xlabel("Quarter")
     ax2.set_xticks(range(len(quarters)))
-    ax2.set_xticklabels(quarters, rotation=45, ha='right', fontsize='small')
-    ax2.set_title("Chain Rule Decomposition of Δ GDP Growth")
+    ax2.set_xticklabels(quarters, rotation=45, ha='right', fontsize='x-small')
+    ax2.set_title("Graph 2 – Chain-Rule Decomposition of Δ GDP")
 
-    explanation = (
-        "Chain decomposition approximates ΔGDP ≈ Σ β_i · dX_i/dt. Positive bars show variables pushing growth higher; "
-        "negative bars show drags. Federal debt's coefficient is smallest; labor, prices, and spending dominate recent shifts."
-    )
-    fig.text(0.5, 0.01, explanation, ha='center', va='bottom', fontsize='small')
+    explanation = ("Chain rule: ΔGDP ≈ Σβ·ΔX. Positive bars lift growth, negative bars drag. "
+                   "Unemployment, inflation, spending dominate; debt effect small.")
+    fig.text(0.5, 0.01, explanation, ha='center', va='bottom', fontsize='x-small')
+    fig.tight_layout(rect=[0, 0.035, 1, 0.98])
 
-    fig.tight_layout(rect=[0, 0.03, 1, 0.98])
+    # --- Graph 3: systemic driver ranking ---
+    mean_abs = np.mean(np.abs(contrib), axis=1)
+    order = np.argsort(mean_abs)[::-1]
+    fixable = [False, False, True, True, True]  # spending, industrial, debt seen as sw-fixable
+
+    fig3, ax3 = plt.subplots(figsize=(13.33, 5), dpi=288)
+    for idx in order:
+        clr = 'tab:green' if fixable[idx] else 'tab:gray'
+        ax3.barh(labels[idx], mean_abs[idx], color=clr, alpha=0.7)
+    ax3.invert_yaxis()
+    ax3.set_xlabel("Mean |Δ Contribution| to GDP")
+    ax3.set_title("Graph 3 – Ranked Systemic Drivers (green = software-addressable)")
+    txt = ("Top bars highlight systemic levers. Green items can be mitigated with software:\n"
+           "• Consumer platforms to smooth demand\n"
+           "• Industrial IoT & AI to optimize production\n"
+           "• Fin-tech transparency to manage debt exposure")
+    fig3.text(0.5, -0.12, txt, ha='center', va='top', fontsize='x-small', wrap=True)
+    fig3.tight_layout(rect=[0, 0.05, 1, 0.95])
 
     base = args.output or 'real_gdp_analysis'
     fig.savefig(f"{base}.png", dpi=288)
+    fig3.savefig(f"{base}_root_causes.png", dpi=288)
 
 if __name__ == "__main__":
     main()
